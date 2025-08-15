@@ -34,7 +34,7 @@
       return d;
     }
     function Map({ coords, name }) {
-      useEffect(() => {
+useEffect(() => {
         if (!coords) return;
         const m = L.map("map").setView([coords.lat, coords.lng], 16);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(m);
