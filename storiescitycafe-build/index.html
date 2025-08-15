@@ -1,0 +1,51 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Stories City Cafe — Menu</title><link rel="icon" href="assets/logo.png"/><script src="https://cdn.tailwindcss.com"></script><script>tailwind.config={theme:{extend:{colors:{brand:{bg:"#0b0b0c",text:"#e5e7eb"}},boxShadow:{card:"0 10px 24px rgba(0,0,0,.25)"},keyframes:{fadeUp:{"0%":{opacity:0,transform:"translateY(6px)"},"100%":{opacity:1,transform:"translateY(0)"}}},animation:{fadeUp:"fadeUp .4s ease forwards"}}}}</script><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><style>:root{--grad:linear-gradient(90deg,#74D7EE,#9BE7D0,#F6C6A1,#F29AC1,#9C8CF5)}.brand-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:transparent}.btn-grad{background:var(--grad);color:#0b0b0c}</style></head><body class="bg-[color:var(--brand-bg,#0b0b0c)] text-brand-text"><div id="root"></div><script src="https://unpkg.com/react@18/umd/react.development.js"></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script type="text/babel">
+const {useEffect,useMemo,useState}=React;const Dict={menu:{ru:"Меню",en:"Menu"},search:{ru:"Поиск по меню…",en:"Search the menu…"},all:{ru:"Все",en:"All"},book:{ru:"Забронировать столик",en:"Book a Table"},trip:{ru:"Мы на TripAdvisor",en:"We are on TripAdvisor"},hours:{ru:"Часы работы",en:"Opening hours"},address:{ru:"Адрес",en:"Address"},call:{ru:"Позвонить",en:"Call"},nothing:{ru:"Ничего не найдено",en:"Nothing found"}};const t=(k,l)=>Dict[k]?Dict[k][l]:k;function useMenu(){const[d,s]=useState(null);useEffect(()=>{fetch("menu.json").then(r=>r.json()).then(s)},[]);return d}
+function Map({coords,name}){useEffect(()=>{if(!coords)return;const m=L.map("map").setView([coords.lat,coords.lng],16);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(m);L.marker([coords.lat,coords.lng]).addTo(m).bindPopup(name).openPopup();return()=>m.remove()},[coords]);return <div id="map" className="h-80 rounded-2xl overflow-hidden mt-3"></div>}
+function App(){const data=useMenu();const[lang,setLang]=useState("ru");const[q,setQ]=useState("");const[cat,setCat]=useState("all");useEffect(()=>{if(data&&data.settings)setLang(data.settings.language_default||"ru")},[data]);const items=useMemo(()=>{if(!data)return[];let list=data.items;if(cat!=="all")list=list.filter(i=>i.category===cat);if(q.trim()){const qq=q.toLowerCase();list=list.filter(i=>(i.title_ru+i.title_en+(i.desc_ru||"")+(i.desc_en||"")).toLowerCase().includes(qq))}return list},[data,cat,q]);if(!data)return <div className="p-6 text-gray-300">Loading…</div>;
+return (<div className="max-w-6xl mx-auto p-6 text-gray-100">
+<header className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+  <div className="flex items-center gap-3">
+    <img src="assets/logo.png" alt="Stories City Cafe" className="w-14 h-14 rounded-xl"/>
+    <div><div className="text-2xl font-extrabold brand-grad">Stories City Cafe</div><div className="text-xs text-gray-400">{t("menu",lang)}</div></div>
+  </div>
+  <div className="flex gap-2">
+    <div className="border border-gray-700 rounded-lg overflow-hidden">
+      <button onClick={()=>setLang("ru")} className={`px-3 py-2 ${lang==="ru"?"bg-gray-800 text-white":"text-gray-300"}`}>RU</button>
+      <button onClick={()=>setLang("en")} className={`px-3 py-2 ${lang==="en"?"bg-gray-800 text-white":"text-gray-300"}`}>EN</button>
+    </div>
+    <a className="px-4 py-2 rounded-lg border border-gray-700" href="admin.html" title="Admin">Admin</a>
+    <a className="px-4 py-2 rounded-lg btn-grad" target="_blank" rel="noopener" href={data.settings.booking_link}>{t("book",lang)}</a>
+  </div>
+</header>
+<div className="mt-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+  <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t("search",lang)} className="flex-1 bg-black/30 border border-gray-700 rounded-xl px-4 py-3 outline-none"/>
+  <a className="px-4 py-2 rounded-lg border border-gray-700" href={"tel:"+data.settings.phone.replace(/[^0-9+]/g,"")}>{t("call",lang)}</a>
+  <a className="px-4 py-2 rounded-lg border border-gray-700" target="_blank" rel="noopener" href={data.settings.tripadvisor}>{t("trip",lang)}</a>
+</div>
+<div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+  <button onClick={()=>setCat("all")} className={`px-3 py-2 rounded-lg border border-gray-700 whitespace-nowrap ${cat==="all"?"btn-grad text-black border-none":""}`}>{t("all",lang)}</button>
+  {data.categories.map(c=>(<button key={c.id} onClick={()=>setCat(c.id)} className={`px-3 py-2 rounded-lg border border-gray-700 whitespace-nowrap ${cat===c.id?"btn-grad text-black border-none":""}`}>{lang==="ru"?c.title_ru:c.title_en}</button>))}
+</div>
+<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+  {items.length===0&&<div className="text-gray-400">{t("nothing",lang)}</div>}
+  {items.map(it=>(<div key={it.id} className="bg-white/5 border border-white/10 rounded-2xl p-3 hover:shadow-card hover:-translate-y-1 transition transform duration-200">
+      <div className="flex gap-3">
+        <img src={`assets/${it.id}.jpg`} onError={(e)=>{e.currentTarget.src='assets/placeholder.jpg'}} className="w-24 h-24 rounded-xl object-cover animate-fadeUp" alt=""/>
+        <div className="flex-1">
+          <div className="font-semibold">{lang==="ru"?it.title_ru:it.title_en}</div>
+          <div className="text-sm text-gray-400">{lang==="ru"?(it.desc_ru||""):it.desc_en}</div>
+          <div className="mt-1 font-bold">{new Intl.NumberFormat(lang==="ru"?"ru-RU":"en-US").format(it.price)} {data.settings.currency}</div>
+        </div>
+      </div>
+  </div>))}
+</div>
+<section className="mt-8 bg-white/5 border border-white/10 rounded-2xl p-4">
+  <h3 className="text-lg font-semibold">Как нас найти</h3>
+  <div id="map" className="h-80 rounded-2xl overflow-hidden mt-3"></div>
+  <div className="mt-3 flex flex-wrap gap-3 text-sm text-gray-300">
+    <span><strong>{lang==="ru"?"Часы работы":"Opening hours"}:</strong> {lang==="ru"?data.settings.hours_ru:data.settings.hours_en}</span>
+    <span><strong>{lang==="ru"?"Адрес":"Address"}:</strong> {lang==="ru"?data.settings.address_ru:data.settings.address_en}</span>
+    <span><strong>Tel:</strong> {data.settings.phone}</span>
+  </div>
+</section>
+</div>)}ReactDOM.createRoot(document.getElementById("root")).render(<App/>)</script></body></html>
